@@ -1000,6 +1000,17 @@ public class FurnitureTable extends JTable implements View, Printable {
     FurnitureTreeTableModel tableModel = (FurnitureTreeTableModel)getModel();
     return tableModel.getFurnitureFilter();
   }
+
+  /**
+   * Sets whether furniture from every viewable level should be included in a printout.
+   */
+  void setPrintAllLevels(boolean printAllLevels) {
+    ((FurnitureTreeTableModel)getModel()).setPrintAllLevels(printAllLevels);
+  }
+
+  boolean isPrintAllLevels() {
+    return ((FurnitureTreeTableModel)getModel()).isPrintAllLevels();
+  }
   
   /**
    * Column table model used by this table.
@@ -1999,6 +2010,7 @@ public class FurnitureTable extends JTable implements View, Printable {
     private Home                                    home;
     private List<HomePieceOfFurniture>              filteredAndSortedFurniture;
     private FurnitureFilter                         furnitureFilter;
+    private boolean                                  printAllLevels;
     private Set<HomeFurnitureGroup>                 expandedGroups;
     private List<TreeModelListener>                 treeModelListeners;
     private Map<Object, List<HomePieceOfFurniture>> childFurnitureCache;  
@@ -2014,6 +2026,11 @@ public class FurnitureTable extends JTable implements View, Printable {
     }
 
     private void addHomeListener(final Home home) {
+      home.addPropertyChangeListener(Home.Property.SELECTED_LEVEL, new PropertyChangeListener() {
+          public void propertyChange(PropertyChangeEvent ev) {
+            filterAndSortFurniture();
+          }
+        });
       home.addFurnitureListener(new CollectionListener<HomePieceOfFurniture>() {
           public void collectionChanged(CollectionEvent<HomePieceOfFurniture> ev) {
             HomePieceOfFurniture piece = ev.getItem();
@@ -2183,7 +2200,9 @@ public class FurnitureTable extends JTable implements View, Printable {
       for (HomePieceOfFurniture homePiece : furniture) {
         if (homePiece.getLevel() == null
             || homePiece.getLevel().isViewable()) {
-          viewableFurniture.add(homePiece);
+          if (this.printAllLevels || homePiece.isAtLevel(this.home.getSelectedLevel())) {
+            viewableFurniture.add(homePiece);
+          }
         }
       }
       
@@ -2233,6 +2252,17 @@ public class FurnitureTable extends JTable implements View, Printable {
     public void setFurnitureFilter(FurnitureFilter furnitureFilter) {
       this.furnitureFilter = furnitureFilter;      
       filterAndSortFurniture();
+    }
+
+    public void setPrintAllLevels(boolean printAllLevels) {
+      if (this.printAllLevels != printAllLevels) {
+        this.printAllLevels = printAllLevels;
+        filterAndSortFurniture();
+      }
+    }
+
+    public boolean isPrintAllLevels() {
+      return this.printAllLevels;
     }
     
     /**
